@@ -31,7 +31,6 @@ public class HZBugTest extends HzBugBase {
   HazelcastInstance hazelcast;
 
   public HZBugTest() {
-    System.setProperty("hazelcast.shutdownhook.enabled", "false");
     hazelcast = Hazelcast.newHazelcastInstance(loadConfigFromClasspath());
     this.serverID = UUID.randomUUID().toString();
     System.out.println("Starting instance, serverID is " + serverID);
