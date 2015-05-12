@@ -19,56 +19,43 @@ package io.vertx.hzbug;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.MultiMap;
-import sun.misc.Signal;
 
 import java.util.UUID;
 
-public class HZBugTest extends HzBugBase{
+public class HZBugTest extends HzBugBase {
 
-  public static void main(String[] args) {
-    new HZBugTest().run();
-  }
-
-  private static final int NUM_ENTRIES = 500;
+  private static final int NUM_ENTRIES = 50;
 
   String serverID;
   MultiMap<String, String> map;
   HazelcastInstance hazelcast;
 
-  public void run() {
+  public HZBugTest() {
     System.setProperty("hazelcast.shutdownhook.enabled", "false");
     hazelcast = Hazelcast.newHazelcastInstance(loadConfigFromClasspath());
     this.serverID = UUID.randomUUID().toString();
     System.out.println("Starting instance, serverID is " + serverID);
     this.map = hazelcast.getMultiMap("mymap");
     populateMap();
-
-    Signal.handle(new Signal("INT"), signal -> {
-      System.out.println("Caught SIGINT, gonna remove entries!");
-      removeFromMap();
-    });
   }
 
   private void populateMap() {
     for (int i = 0; i < NUM_ENTRIES; i++) {
-      map.put("ping-address", serverID + i);
+      map.put("ping-address" + i, serverID);
     }
     System.out.println("Populated map");
   }
 
-  private void removeFromMap() {
-    System.out.println("Shutting down - removing entries from map");
+  public void removeEntriesFromMapAndShutdown() {
+    System.out.println("removing entries from map");
     for (int i = 0; i < NUM_ENTRIES; i++) {
-      System.out.println(map.remove("ping-address", serverID + i));
+      boolean removed = map.remove("ping-address" + i, serverID);
+      System.out.println("Removing entry " + serverID  + " from subsmap, result = " + removed);
     }
-    System.out.println("Removal complete");
+    System.out.println("Removal complete, shutting down hazelcast");
 
-//    try {
-//      Thread.sleep(5000);
-//    } catch (Exception e) {
-//    }
-
-    hazelcast.shutdown();
+    hazelcast.getLifecycleService().shutdown();
+    System.out.println("Hazelcast is shutdown");
   }
 
 

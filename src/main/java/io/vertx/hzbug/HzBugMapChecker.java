@@ -23,27 +23,20 @@ import com.hazelcast.core.MultiMap;
 
 public class HzBugMapChecker extends HzBugBase {
 
-  public static void main(String[] args) {
-    new HzBugMapChecker().run();
-  }
-
   MultiMap<String, String> map;
 
-  public void run() {
-    System.setProperty("hazelcast.shutdownhook.enabled", "false");
+  public HzBugMapChecker() {
     HazelcastInstance hazelcast = Hazelcast.newHazelcastInstance(loadConfigFromClasspath());
     this.map = hazelcast.getMultiMap("mymap");
-    displayMap();
   }
 
-  private void displayMap() {
-    while (true) {
-      System.out.println("Displaying map, entries: " + map.size());
-      try {
-        Thread.sleep(5000);
-      } catch (Exception e) {
-      }
+  public void displayMap() {
+    for (String key : map.keySet()) {
+      System.out.printf("%-35s", key);
+      map.get(key);
+      System.out.println(map.get(key));
     }
+    System.out.println("Map Size:" + map.size());
   }
 
 }

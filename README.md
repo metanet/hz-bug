@@ -1,64 +1,27 @@
 # Reproducer for potential Hazelcast bug
 
-If multiple Hazelcast nodes attempt to remove values from a key of a multimap concurrently, then shutdown their node,
-the multimap can remain in an inconsistent state with entries remaining after all have been removed.
+Runner Runner.java main class in your IDE
 
-## To reproduce
+This starts 3 nodes, each of which adds 50 entries to a multimap.
 
-The easiest way to do this is just to run it in your IDE.
+It also starts another node which is simply used to display what is in the multimap.
 
-Steps:
+Once the nodes are started all but one of the nodes concurrently remove their entries from the multimap and shutdown
+their hazelcast instance.
 
-## Step 1
+If all works correctly you should notice in the console output
 
-Run 4 instances of HzBugTest in your IDE. (Right click on its main() method to run it).
+"Map Size 50"
 
-This class adds 500 entries to a well known key of a multimap.
+After the nodes have shutdown as there is just a single node (and the checker left alive).
 
-When all four instances are running we should have 2000 entries for that key in the multimap.
+However, sometimes you will notice
 
-## Step 2
+"Map Size 35"
 
-Run 1 instance of HzBugMapChecker in your IDE (Again right click on its main() method).
+NOTE: If it's not 50, it *always" seems to be 35 when there are 3 nodes, and 43 when there are 4 nodes in the cluster!
 
-This class simply prints how many entries are in the well known key to stdout.
+**You may need to run Runner several times to see the problem**
 
-It should display 2000. All good so far.
-
-## Step 3
-
-We're going to tell all the instances of HzBugTest to remove all their entries from the well known key and then
-shutdown their hazelcast instance.
-
-We want this to happen at the same time so I've implemented a signal handler in the class that will do this when
-it receives a SIGINT signal. This can be sent to a *nix process using:
-
-kill -2 <pid>
-
-You don't have to do it this way, and the same problem occurs as long as the remove and shutdown happens concurrently,
-however you trigger it, but its convenient to do this using signals.
-
-Ok, to kill the processes do something like:
-
-ps aux | grep HzBugTest
-
-This will list the pids of the processes, then to send SIGINT to them do:
-
-kill -2 pid1 pid2 pid3 pid4
-
-Where pidN is the Nth pid listed above.
-
-## Step 4
-
-Wait a bit and look at the output of the HzBugMapChecker, you should see some remaining entries that never get removed,
-this is despite the return value from the map.remove operation being true, representing success.
-
-## Observations
-
-The problem only occurs if the nodes remove entries then immediately shutdown their hazelcast.
-
-If an artificial delay is inserted between the remove and the shutdown then the problem does not manifest.
-
-This strongly implies that the cluster wide state of the map is not made consistent until some time after the calls
-to map.remove have returned, which should not be the case.
-
+**Please note that we are using cluster config which uses TCP transport and localhost. I cannot see the issue when
+using multicast transport**
